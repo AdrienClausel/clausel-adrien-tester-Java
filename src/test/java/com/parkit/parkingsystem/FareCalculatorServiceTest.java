@@ -124,7 +124,7 @@ public class FareCalculatorServiceTest {
         assertEquals( (24 * Fare.CAR_RATE_PER_HOUR) , ticket.getPrice());
     }
 
-    public void calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType parkingType) {
+    private void calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType parkingType) {
         Date inTime = new Date();
         inTime.setTime( System.currentTimeMillis() - ( 29 * 60 * 1000) );//29 minutes parking time should give 0
         Date outTime = new Date();
@@ -145,6 +145,30 @@ public class FareCalculatorServiceTest {
     @Test
     public void calculateFareBikeWithLessThan30minutesParkingTime(){
         calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType.BIKE);
+    }
+
+    private void calculateFareCarOrBikeWithDiscount(ParkingType parkingType,double fare){
+        Date inTime = new Date();
+        inTime.setTime( System.currentTimeMillis() - ( 45 * 60 * 1000) );//45 minutes parking time
+        Date outTime = new Date();
+        ParkingSpot parkingSpot = new ParkingSpot(1, parkingType,false);
+
+        ticket.setInTime(inTime);
+        ticket.setOutTime(outTime);
+        ticket.setParkingSpot(parkingSpot);
+
+        fareCalculatorService.calculateFare(ticket,true);
+        assertEquals( 0.75 * fare * 0.95 , ticket.getPrice());
+    }
+
+    @Test
+    public void calculateFareCarWithDiscount(){
+        calculateFareCarOrBikeWithDiscount(ParkingType.CAR,Fare.CAR_RATE_PER_HOUR);
+    }
+
+    @Test
+    public void calculateFareBikeWithDiscount(){
+        calculateFareCarOrBikeWithDiscount(ParkingType.BIKE,Fare.BIKE_RATE_PER_HOUR);
     }
 
 }
