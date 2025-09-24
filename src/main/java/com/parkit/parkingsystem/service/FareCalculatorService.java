@@ -16,6 +16,11 @@ public class FareCalculatorService {
         long durationInMilliSecond = outHour - inHour;
         double duration = (double) durationInMilliSecond / (1000 * 60 * 60);
 
+        //If parking time is less than 30 minutes then the price is free.
+        if (duration < 0.5) {
+            duration = 0;
+        }
+
         switch (ticket.getParkingSpot().getParkingType()){
             case CAR: {
                 ticket.setPrice(duration * Fare.CAR_RATE_PER_HOUR);
