@@ -56,4 +56,21 @@ public class ParkingSpotDAO {
         }
     }
 
+    public boolean getParkingAvailable(int parkingNumber){
+        boolean parkingAvailable = false;
+        try (Connection con = dataBaseConfig.getConnection();
+             PreparedStatement ps = con.prepareStatement(DBConstants.GET_AVAILABLE_SPOT)) {
+
+            ps.setInt(1, parkingNumber);
+            try (ResultSet rs = ps.executeQuery()){
+                if (rs.next()) {
+                    parkingAvailable = (rs.getInt(1) == 1);
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Error get number ticket", ex);
+        }
+        return parkingAvailable;
+    }
+
 }
