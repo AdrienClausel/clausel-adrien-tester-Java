@@ -9,8 +9,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 
 public class FareCalculatorServiceTest {
@@ -39,7 +42,8 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals(ticket.getPrice(), Fare.CAR_RATE_PER_HOUR);
+
+        assertThat(ticket.getPrice()).isEqualByComparingTo(Fare.CAR_RATE_PER_HOUR);
     }
 
     @Test
@@ -53,7 +57,8 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals(ticket.getPrice(), Fare.BIKE_RATE_PER_HOUR);
+
+        assertThat(ticket.getPrice()).isEqualByComparingTo(Fare.BIKE_RATE_PER_HOUR);
     }
 
     @Test
@@ -93,7 +98,7 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals((0.75 * Fare.BIKE_RATE_PER_HOUR), ticket.getPrice() );
+        assertThat(Fare.BIKE_RATE_PER_HOUR.multiply(BigDecimal.valueOf(0.75))).isEqualByComparingTo(ticket.getPrice());
     }
 
     @Test
@@ -107,7 +112,7 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals( (0.75 * Fare.CAR_RATE_PER_HOUR) , ticket.getPrice());
+        assertThat(Fare.CAR_RATE_PER_HOUR.multiply(BigDecimal.valueOf(0.75)).setScale(2,RoundingMode.HALF_UP)).isEqualByComparingTo(ticket.getPrice());
     }
 
     @Test
@@ -121,7 +126,53 @@ public class FareCalculatorServiceTest {
         ticket.setOutTime(outTime);
         ticket.setParkingSpot(parkingSpot);
         fareCalculatorService.calculateFare(ticket);
-        assertEquals( (24 * Fare.CAR_RATE_PER_HOUR) , ticket.getPrice());
+        assertThat(Fare.CAR_RATE_PER_HOUR.multiply(BigDecimal.valueOf(24))).isEqualByComparingTo(ticket.getPrice());
+    }
+
+    private void calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType parkingType) {
+        Date inTime = new Date();
+        inTime.setTime( System.currentTimeMillis() - ( 29 * 60 * 1000) );//29 minutes parking time should give 0
+        Date outTime = new Date();
+        ParkingSpot parkingSpot = new ParkingSpot(1, parkingType,false);
+
+        ticket.setInTime(inTime);
+        ticket.setOutTime(outTime);
+        ticket.setParkingSpot(parkingSpot);
+        fareCalculatorService.calculateFare(ticket);
+        assertThat(BigDecimal.ZERO).isEqualByComparingTo(ticket.getPrice());
+    }
+
+    @Test
+    public void calculateFareCarWithLessThan30minutesParkingTime(){
+        calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType.CAR);
+    }
+
+    @Test
+    public void calculateFareBikeWithLessThan30minutesParkingTime(){
+        calculateFareCarOrBikeWithLessThan30minutesParkingTime(ParkingType.BIKE);
+    }
+
+    private void calculateFareCarOrBikeWithDiscount(ParkingType parkingType,BigDecimal fare){
+        Date inTime = new Date();
+        inTime.setTime( System.currentTimeMillis() - ( 45 * 60 * 1000) );//45 minutes parking time
+        Date outTime = new Date();
+        ParkingSpot parkingSpot = new ParkingSpot(1, parkingType,false);
+
+        ticket.setInTime(inTime);
+        ticket.setOutTime(outTime);
+        ticket.setParkingSpot(parkingSpot);
+        fareCalculatorService.calculateFare(ticket,true);
+        assertThat(fare.multiply(BigDecimal.valueOf(0.75 * 0.95)).setScale(2,RoundingMode.HALF_UP)).isEqualByComparingTo(ticket.getPrice());
+    }
+
+    @Test
+    public void calculateFareCarWithDiscount(){
+        calculateFareCarOrBikeWithDiscount(ParkingType.CAR,Fare.CAR_RATE_PER_HOUR);
+    }
+
+    @Test
+    public void calculateFareBikeWithDiscount(){
+        calculateFareCarOrBikeWithDiscount(ParkingType.BIKE,Fare.BIKE_RATE_PER_HOUR);
     }
 
 }

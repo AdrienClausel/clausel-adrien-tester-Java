@@ -9,6 +9,7 @@ import com.parkit.parkingsystem.util.InputReaderUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class ParkingService {
@@ -41,13 +42,16 @@ public class ParkingService {
                 //ticket.setId(ticketID);
                 ticket.setParkingSpot(parkingSpot);
                 ticket.setVehicleRegNumber(vehicleRegNumber);
-                ticket.setPrice(0);
+                ticket.setPrice(BigDecimal.ZERO);
                 ticket.setInTime(inTime);
                 ticket.setOutTime(null);
                 ticketDAO.saveTicket(ticket);
                 System.out.println("Generated Ticket and saved in DB");
                 System.out.println("Please park your vehicle in spot number:"+parkingSpot.getId());
                 System.out.println("Recorded in-time for vehicle number:"+vehicleRegNumber+" is:"+inTime);
+                if (ticketDAO.getNbTicket(vehicleRegNumber) > 1){
+                    System.out.println("Heureux de vous revoir ! En tant qu’utilisateur régulier de notre parking, vous allez obtenir une remise de 5 %");
+                }
             }
         }catch(Exception e){
             logger.error("Unable to process incoming vehicle",e);
@@ -103,7 +107,11 @@ public class ParkingService {
             Ticket ticket = ticketDAO.getTicket(vehicleRegNumber);
             Date outTime = new Date();
             ticket.setOutTime(outTime);
-            fareCalculatorService.calculateFare(ticket);
+            if (ticketDAO.getNbTicket(vehicleRegNumber) > 1) {
+                fareCalculatorService.calculateFare(ticket,true);
+            } else {
+                fareCalculatorService.calculateFare(ticket);
+            }
             if(ticketDAO.updateTicket(ticket)) {
                 ParkingSpot parkingSpot = ticket.getParkingSpot();
                 parkingSpot.setAvailable(true);
